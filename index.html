@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kalkulator BMI Sederhana</title>
+  <style>
+    :root{
+      --bg:#0b1320; --card:#121a2b; --muted:#98a2b3; --text:#e6edf3; --accent:#4f46e5; --ok:#10b981; --warn:#f59e0b; --danger:#ef4444;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,Arial,Helvetica,sans-serif;background:linear-gradient(180deg,#0b1320,#0f172a 50%,#0b1320);color:var(--text)}
+    .wrap{max-width:900px;margin:40px auto;padding:20px}
+    .card{background:var(--card);border:1px solid rgba(255,255,255,.06);border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    header{padding:22px 24px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;gap:14px;align-items:center}
+    header .logo{width:44px;height:44px;border-radius:12px;background:radial-gradient(circle at 30% 30%,#60a5fa,transparent 40%),radial-gradient(circle at 70% 70%,#a78bfa,transparent 40%),linear-gradient(135deg,#111827,#1f2937);border:1px solid rgba(255,255,255,.1)}
+    header h1{font-size:1.15rem;margin:0}
+    header p{margin:2px 0 0;color:var(--muted);font-size:.92rem}
+
+    .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:22px;padding:24px}
+    @media(max-width:800px){.grid{grid-template-columns:1fr}}
+
+    .panel{background:#0c1425;border:1px solid rgba(255,255,255,.06);border-radius:16px;padding:18px}
+    .panel h2{margin:.2rem 0 1rem;font-size:1.05rem;color:#cbd5e1}
+    label{display:block;margin:10px 0 6px;font-size:.92rem;color:#c7d2fe}
+    .input{display:flex;gap:10px}
+    input[type="number"]{width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.08);background:#0b1221;color:var(--text);outline:none}
+    input[type="number"]:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.2)}
+    .hint{color:var(--muted);font-size:.85rem}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    button{border:0;border-radius:12px;padding:12px 14px;font-weight:600;cursor:pointer}
+    .primary{background:var(--accent);color:white}
+    .ghost{background:transparent;color:var(--text);border:1px solid rgba(255,255,255,.15)}
+
+    .result{display:grid;gap:12px}
+    .bmi-badge{font-size:2.2rem;font-weight:800}
+    .category{font-weight:700}
+    .advice{color:var(--muted);line-height:1.6}
+    .bar{height:12px;background:#101828;border-radius:999px;overflow:hidden;border:1px solid rgba(255,255,255,.06)}
+    .bar span{display:block;height:100%;width:0%}
+
+    .legend{display:flex;gap:8px;flex-wrap:wrap;font-size:.82rem;color:var(--muted)}
+    .legend i{display:inline-block;width:14px;height:10px;border-radius:999px;margin-right:6px;vertical-align:middle}
+
+    table{width:100%;border-collapse:collapse;margin-top:8px}
+    th,td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06)}
+    th{color:#cbd5e1;text-align:left;font-size:.9rem}
+    td{color:#e5e7eb;font-size:.92rem}
+    .right{text-align:right}
+
+    footer{padding:14px 20px;color:var(--muted);font-size:.82rem;border-top:1px solid rgba(255,255,255,.06)}
+  </style>
+</head>
+<body>
+  <div class="wrap card" role="main" aria-labelledby="title">
+    <header>
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <h1 id="title">Kalkulator BMI (IMT)</h1>
+        <p>Hitung indeks massa tubuh kamu dan dapatkan kategori + saran singkat.</p>
+      </div>
+    </header>
+
+    <section class="grid" aria-live="polite">
+      <div class="panel" id="formPanel">
+        <h2>Masukan Data</h2>
+        <div class="row">
+          <div>
+            <label for="berat">Berat Badan (kg)</label>
+            <input id="berat" type="number" min="1" step="0.1" placeholder="cth: 60"/>
+          </div>
+          <div>
+            <label for="tinggi">Tinggi Badan</label>
+            <div class="input">
+              <input id="tinggi" type="number" min="1" step="0.1" placeholder="cth: 170"/>
+              <select id="unit" aria-label="Satuan tinggi">
+                <option value="cm">cm</option>
+                <option value="m">m</option>
+              </select>
+            </div>
+            <div class="hint">Gunakan cm atau m (misal 170 cm atau 1.70 m)</div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="primary" id="hitungBtn">Hitung BMI</button>
+          <button class="ghost" id="resetBtn" title="Kosongkan input">Reset</button>
+          <button class="ghost" id="simpanBtn" title="Simpan ke riwayat">Simpan</button>
+        </div>
+      </div>
+
+      <div class="panel" id="resultPanel">
+        <h2>Hasil</h2>
+        <div class="result">
+          <div class="bmi-badge" id="bmiVal">—</div>
+          <div class="category" id="bmiCat">Masukkan data untuk melihat hasil</div>
+          <div class="bar" aria-label="Skala BMI">
+            <span id="barFill"></span>
+          </div>
+          <div class="legend">
+            <span><i style="background:var(--warn)"></i>Kurang (&lt; 18.5)</span>
+            <span><i style="background:var(--ok)"></i>Normal (18.5–24.9)</span>
+            <span><i style="background:var(--warn)"></i>Kelebihan (25–29.9)</span>
+            <span><i style="background:var(--danger)"></i>Obesitas (≥ 30)</span>
+          </div>
+          <p class="advice" id="advice">Tips akan muncul di sini setelah perhitungan.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="historyTitle">
+      <h2 id="historyTitle">Riwayat Perhitungan</h2>
+      <table id="historyTable" aria-describedby="historyTitle">
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Berat (kg)</th>
+            <th>Tinggi (cm)</th>
+            <th>BMI</th>
+            <th>Kategori</th>
+            <th class="right">Aksi</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <footer>
+      Catatan: BMI adalah indikator umum, bukan diagnosis. Konsultasikan tenaga kesehatan untuk penilaian lebih lengkap.
+    </footer>
+  </div>
+
+  <script>
+    const beratEl = document.getElementById('berat');
+    const tinggiEl = document.getElementById('tinggi');
+    const unitEl = document.getElementById('unit');
+    const bmiValEl = document.getElementById('bmiVal');
+    const bmiCatEl = document.getElementById('bmiCat');
+    const adviceEl = document.getElementById('advice');
+    const barFillEl = document.getElementById('barFill');
+    const historyTbody = document.querySelector('#historyTable tbody');
+
+    const clamp = (n,min,max)=>Math.min(Math.max(n,min),max);
+
+    function cmToM(v, unit){
+      const val = parseFloat(v);
+      if(!isFinite(val) || val <= 0) return null;
+      return unit === 'cm' ? val/100 : val;
+    }
+
+    function calcBMI(kg, m){
+      if(!isFinite(kg) || !isFinite(m) || kg<=0 || m<=0) return null;
+      return kg / (m*m);
+    }
+
+    function getCategory(bmi){
+      if(bmi < 18.5) return {name:'Kekurangan berat badan', color:'var(--warn)', tip:'Tingkatkan asupan kalori bergizi dan latihan kekuatan otot.'};
+      if(bmi < 25)   return {name:'Normal / Ideal', color:'var(--ok)', tip:'Pertahankan pola makan seimbang dan aktivitas 150 menit/minggu.'};
+      if(bmi < 30)   return {name:'Kelebihan berat badan', color:'var(--warn)', tip:'Atur porsi, kurangi minuman manis, tambah jalan 7–10k langkah/hari.'};
+      return              {name:'Obesitas', color:'var(--danger)', tip:'Konsultasi ke tenaga kesehatan; fokus defisit kalori aman & aktivitas.'};
+    }
+
+    function updateBar(bmi, color){
+      // Skala 12–40 agar indikator tidak mentok untuk nilai ekstrem
+      const pct = ((clamp(bmi,12,40)-12)/(40-12))*100;
+      barFillEl.style.width = pct.toFixed(1)+'%';
+      barFillEl.style.background = color;
+    }
+
+    function format2(n){ return isFinite(n) ? n.toFixed(2) : '—'; }
+
+    function hitung(){
+      const kg = parseFloat(beratEl.value);
+      const m  = cmToM(tinggiEl.value, unitEl.value);
+
+      if(!isFinite(kg) || kg<=0){ alert('Berat harus diisi benar (kg).'); return null; }
+      if(!isFinite(m)  || m<=0 ){ alert('Tinggi harus diisi benar (cm atau m).'); return null; }
+
+      const bmi = calcBMI(kg, m);
+      if(bmi===null){ alert('Perhitungan gagal.'); return null; }
+
+      const cat = getCategory(bmi);
+      bmiValEl.textContent = format2(bmi);
+      bmiCatEl.textContent = cat.name;
+      bmiCatEl.style.color = cat.color;
+      adviceEl.textContent = cat.tip;
+      updateBar(bmi, cat.color);
+
+      return {kg, m, bmi, cat};
+    }
+
+    function saveHistory(item){
+      const hist = JSON.parse(localStorage.getItem('bmi_history')||'[]');
+      hist.unshift({
+        t:new Date().toISOString(),
+        kg:item.kg,
+        cm: Math.round(item.m*100),
+        bmi: Number(item.bmi.toFixed(2)),
+        cat:item.cat.name
+      });
+      localStorage.setItem('bmi_history', JSON.stringify(hist.slice(0,50)));
+      renderHistory();
+    }
+
+    function renderHistory(){
+      const hist = JSON.parse(localStorage.getItem('bmi_history')||'[]');
+      historyTbody.innerHTML = '';
+      hist.forEach((h,idx)=>{
+        const tr = document.createElement('tr');
+        const date = new Date(h.t);
+        tr.innerHTML = `
+          <td>${date.toLocaleString('id-ID',{dateStyle:'medium', timeStyle:'short'})}</td>
+          <td>${h.kg}</td>
+          <td>${h.cm}</td>
+          <td>${h.bmi}</td>
+          <td>${h.cat}</td>
+          <td class="right">
+            <button class="ghost" data-del="${idx}">Hapus</button>
+          </td>`;
+        historyTbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById('hitungBtn').addEventListener('click', ()=>{
+      hitung();
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', ()=>{
+      beratEl.value=''; tinggiEl.value=''; unitEl.value='cm';
+      bmiValEl.textContent='—';
+      bmiCatEl.textContent='Masukkan data untuk melihat hasil';
+      bmiCatEl.style.color='';
+      adviceEl.textContent='Tips akan muncul di sini setelah perhitungan.';
+      updateBar(0,'transparent');
+    });
+
+    document.getElementById('simpanBtn').addEventListener('click', ()=>{
+      const r = hitung();
+      if(r) saveHistory(r);
+    });
+
+    historyTbody.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button[data-del]');
+      if(!btn) return;
+      const idx = Number(btn.getAttribute('data-del'));
+      const hist = JSON.parse(localStorage.getItem('bmi_history')||'[]');
+      hist.splice(idx,1);
+      localStorage.setItem('bmi_history', JSON.stringify(hist));
+      renderHistory();
+    });
+
+    // First render
+    renderHistory();
+  </script>
+</body>
+</html>
